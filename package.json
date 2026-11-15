@@ -1,0 +1,16 @@
+{
+  "name": "roma-chat",
+  "version": "1.0.0",
+  "description": "Chat vidéo aléatoire en 1 contre 1",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5"
+  }
+}

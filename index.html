@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roma Chat</title>
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue: #1E73BE;
+    --green: #2E9B4A;
+    --red: #E4252B;
+    --ink: #0F1B17;
+    --panel: #16261F;
+    --line: #27403472;
+    --text: #F3F7F4;
+    --muted: #9DB4A8;
+    --head: "Bricolage Grotesque", system-ui, sans-serif;
+    --body: "Inter", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body { font-family: var(--body); background: var(--ink); color: var(--text); }
+  button { font: inherit; cursor: pointer; border: 0; }
+  :focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+
+  /* ---------- Accueil : le drapeau lui-même sert de fond ---------- */
+  #home {
+    min-height: 100%; display: grid; place-items: center; padding: 24px;
+    background: linear-gradient(var(--blue) 50%, var(--green) 50%);
+  }
+  .card {
+    width: min(440px, 100%); background: var(--ink); border-radius: 28px;
+    padding: 36px 28px 28px; text-align: center;
+    box-shadow: 0 24px 60px rgba(0,0,0,.35);
+  }
+  .card img { width: 96px; height: 96px; }
+  .card h1 { font-family: var(--head); font-weight: 800; font-size: 2.6rem; margin: 14px 0 6px; letter-spacing: -.02em; }
+  .card p.sub { color: var(--muted); line-height: 1.5; margin-bottom: 22px; }
+  .age { display: flex; gap: 12px; align-items: flex-start; text-align: left; background: var(--panel); border-radius: 16px; padding: 14px; margin-bottom: 18px; line-height: 1.4; font-size: .95rem; }
+  .age input { width: 22px; height: 22px; margin-top: 1px; accent-color: var(--green); flex: none; }
+  .go { width: 100%; padding: 16px; border-radius: 16px; font-weight: 700; font-size: 1.1rem; background: var(--green); color: #fff; }
+  .go:disabled { background: #3a4a43; color: #8aa095; cursor: not-allowed; }
+  .rules { color: var(--muted); font-size: .85rem; margin-top: 16px; line-height: 1.5; }
+  #error { color: #ff9a9d; margin-top: 12px; min-height: 1.2em; font-size: .95rem; }
+
+  /* ---------- Chat ---------- */
+  #room { display: none; height: 100%; grid-template-rows: auto 1fr auto; }
+  header { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: var(--panel); }
+  header img { width: 34px; height: 34px; }
+  header strong { font-family: var(--head); font-size: 1.2rem; }
+  #status { margin-left: auto; color: var(--muted); font-size: .9rem; }
+  main { display: grid; grid-template-columns: 1fr 340px; min-height: 0; }
+  .stage { position: relative; background: #000; min-height: 0; }
+  #remote { width: 100%; height: 100%; object-fit: cover; background: #000; }
+  #local { position: absolute; right: 12px; bottom: 12px; width: 26%; max-width: 180px; aspect-ratio: 3/4; object-fit: cover; border-radius: 14px; border: 2px solid rgba(255,255,255,.7); background: #111; transform: scaleX(-1); }
+  #searching { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 14px; background: linear-gradient(var(--blue) 50%, var(--green) 50%); color: #fff; font-weight: 600; text-align: center; }
+  #searching svg { width: 110px; height: 110px; animation: spin 6s linear infinite; }
+  #searching.hidden { display: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { #searching svg { animation: none; } }
+
+  aside { display: grid; grid-template-rows: 1fr auto; background: var(--panel); min-height: 0; }
+  #log { overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+  .msg { max-width: 85%; padding: 8px 12px; border-radius: 14px; line-height: 1.35; overflow-wrap: anywhere; }
+  .msg.me { align-self: flex-end; background: var(--green); }
+  .msg.them { align-self: flex-start; background: #24382f; }
+  .sys { align-self: center; color: var(--muted); font-size: .85rem; }
+  #send { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--line); }
+  #text { flex: 1; min-width: 0; padding: 12px; border-radius: 12px; border: 0; background: #0F1B17; color: var(--text); font: inherit; }
+  #send button { padding: 0 16px; border-radius: 12px; background: var(--blue); color: #fff; font-weight: 600; }
+
+  .bar { display: flex; gap: 10px; padding: 12px 16px; background: var(--panel); }
+  .bar button { padding: 14px 20px; border-radius: 14px; font-weight: 700; color: #fff; }
+  #next { background: var(--green); flex: 1; font-size: 1.05rem; }
+  #report { background: #5a2a2c; }
+  #stop { background: #34453d; }
+
+  @media (max-width: 760px) {
+    main { grid-template-columns: 1fr; grid-template-rows: 55% 45%; }
+    #local { width: 30%; }
+  }
+</style>
+</head>
+<body>
+
+<section id="home">
+  <div class="card">
+    <img src="logo.svg" alt="Logo Roma Chat">
+    <h1>Roma Chat</h1>
+    <p class="sub">Discute en vidéo avec quelqu'un au hasard. Un clic sur « Suivant » et tu passes à la personne suivante.</p>
+    <label class="age">
+      <input type="checkbox" id="adult">
+      <span>Je confirme avoir 18 ans ou plus et j'accepte de rester respectueux.</span>
+    </label>
+    <button class="go" id="start" disabled>Commencer</button>
+    <div id="error" role="alert"></div>
+    <p class="rules">Pas de contenu sexuel, de harcèlement ni de haine. Tu peux signaler quelqu'un à tout moment : il ne te sera plus jamais proposé.</p>
+  </div>
+</section>
+
+<section id="room">
+  <header>
+    <img src="logo.svg" alt="">
+    <strong>Roma Chat</strong>
+    <span id="status" aria-live="polite"></span>
+  </header>
+  <main>
+    <div class="stage">
+      <video id="remote" autoplay playsinline></video>
+      <video id="local" autoplay playsinline muted></video>
+      <div id="searching">
+        <svg viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="88" fill="none" stroke="#E4252B" stroke-width="10"/><circle cx="100" cy="100" r="14.1" fill="#E4252B"/><line x1="114.1" y1="100.0" x2="188.0" y2="100.0" stroke="#E4252B" stroke-width="5.5" stroke-linecap="round"/><line x1="113.0" y1="105.4" x2="181.3" y2="133.7" stroke="#E4252B" stroke-width="5.5" stroke-linecap="round"/><line x1="110.0" y1="110.0" x2="162.2" y2="162.2" stroke="#E4252B" stroke-width="5.5" stroke-linecap="round"/><line x1="105.4" y1="113.0" x2="133.7" y2="181.3" stroke="#E4252B" stroke-width="5.5" stroke-linecap="round"/><line x1="100.0" y1="114.1" x2="100.0" y2="188.0" stroke="#E4252B" stroke-width="5.5" stroke-linecap="round"/><line x1="94.6" y1="113.0" x2="66.3" y2="181.3" stroke="#E4252B" stroke-width="5.5" stroke-linecap="round"/><line x1="90.0" y1="110.0" x2="37.8" y2="162.2" stroke="#E4252B" stroke-width="5.5" stroke-linecap="round"/><line x1="87.0" y1="105.4" x2="18.7" y2="133.7" stroke="#E4252B" stroke-width="5.5" stroke-linecap="round"/><line x1="85.9" y1="100.0" x2="12.0" y2="100.0" stroke="#E4252B" stroke-width="5.5" stroke-linecap="round"/><line x1="87.0" y1="94.6" x2="18.7" y2="66.3" stroke="#E4252B" stroke-width="5.5" stroke-linecap="round"/><line x1="90.0" y1="90.0" x2="37.8" y2="37.8" stroke="#E4252B" stroke-width="5.5" stroke-linecap="round"/><line x1="94.6" y1="87.0" x2="66.3" y2="18.7" stroke="#E4252B" stroke-width="5.5" stroke-linecap="round"/><line x1="100.0" y1="85.9" x2="100.0" y2="12.0" stroke="#E4252B" stroke-width="5.5" stroke-linecap="round"/><line x1="105.4" y1="87.0" x2="133.7" y2="18.7" stroke="#E4252B" stroke-width="5.5" stroke-linecap="round"/><line x1="110.0" y1="90.0" x2="162.2" y2="37.8" stroke="#E4252B" stroke-width="5.5" stroke-linecap="round"/><line x1="113.0" y1="94.6" x2="181.3" y2="66.3" stroke="#E4252B" stroke-width="5.5" stroke-linecap="round"/></svg>
+        <span id="searchText">Recherche d'une personne…</span>
+      </div>
+    </div>
+    <aside>
+      <div id="log" aria-live="polite"></div>
+      <div id="send">
+        <input id="text" type="text" maxlength="500" placeholder="Écris un message" autocomplete="off" aria-label="Message">
+        <button id="sendBtn">Envoyer</button>
+      </div>
+    </aside>
+  </main>
+  <div class="bar">
+    <button id="next">Suivant</button>
+    <button id="report">Signaler</button>
+    <button id="stop">Arrêter</button>
+  </div>
+</section>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const socket = io();
+const ICE = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+let pc = null, localStream = null, pendingIce = [], connected = false;
+
+$('adult').addEventListener('change', (e) => { $('start').disabled = !e.target.checked; });
+
+$('start').addEventListener('click', async () => {
+  $('error').textContent = '';
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+  } catch (err) {
+    $('error').textContent = 'Autorise la caméra et le micro dans ton navigateur pour continuer.';
+    return;
+  }
+  $('local').srcObject = localStream;
+  $('home').style.display = 'none';
+  $('room').style.display = 'grid';
+  socket.emit('ready', { adult: $('adult').checked });
+});
+
+function setSearching(on, text) {
+  $('searching').classList.toggle('hidden', !on);
+  if (text) $('searchText').textContent = text;
+  $('status').textContent = on ? 'En attente…' : 'En ligne';
+}
+
+function addMsg(text, cls) {
+  const d = document.createElement('div');
+  d.className = cls;
+  d.textContent = text; // textContent : pas d'injection HTML
+  $('log').appendChild(d);
+  $('log').scrollTop = $('log').scrollHeight;
+}
+
+function closePC() {
+  if (pc) { pc.ontrack = pc.onicecandidate = null; pc.close(); pc = null; }
+  pendingIce = [];
+  $('remote').srcObject = null;
+}
+
+function openPC(initiator) {
+  closePC();
+  pc = new RTCPeerConnection(ICE);
+  localStream.getTracks().forEach((t) => pc.addTrack(t, localStream));
+  pc.ontrack = (e) => { $('remote').srcObject = e.streams[0]; setSearching(false); };
+  pc.onicecandidate = (e) => { if (e.candidate) socket.emit('signal', { candidate: e.candidate }); };
+  if (initiator) {
+    pc.createOffer()
+      .then((o) => pc.setLocalDescription(o))
+      .then(() => socket.emit('signal', { sdp: pc.localDescription }));
+  }
+}
+
+socket.on('waiting', () => { closePC(); setSearching(true, "Recherche d'une personne…"); });
+
+socket.on('matched', ({ initiator }) => {
+  $('log').innerHTML = '';
+  addMsg('Tu es en ligne avec quelqu\'un. Dis bonjour !', 'sys');
+  setSearching(true, 'Connexion…');
+  openPC(initiator);
+});
+
+socket.on('signal', async (d) => {
+  if (!pc) return;
+  try {
+    if (d.sdp) {
+      await pc.setRemoteDescription(d.sdp);
+      for (const c of pendingIce) await pc.addIceCandidate(c);
+      pendingIce = [];
+      if (d.sdp.type === 'offer') {
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        socket.emit('signal', { sdp: pc.localDescription });
+      }
+    } else if (d.candidate) {
+      if (pc.remoteDescription) await pc.addIceCandidate(d.candidate);
+      else pendingIce.push(d.candidate);
+    }
+  } catch (err) { console.error(err); }
+});
+
+socket.on('partner-left', () => {
+  closePC();
+  addMsg('La personne est partie. Recherche d\'une nouvelle personne…', 'sys');
+  setSearching(true, "Recherche d'une personne…");
+  socket.emit('next');
+});
+
+socket.on('chat', (t) => addMsg(t, 'msg them'));
+
+socket.on('refused', (msg) => {
+  closePC();
+  if (localStream) localStream.getTracks().forEach((t) => t.stop());
+  $('room').style.display = 'none';
+  $('home').style.display = 'grid';
+  $('error').textContent = msg;
+});
+
+function sendMsg() {
+  const t = $('text').value.trim();
+  if (!t) return;
+  socket.emit('chat', t);
+  addMsg(t, 'msg me');
+  $('text').value = '';
+}
+$('sendBtn').addEventListener('click', sendMsg);
+$('text').addEventListener('keydown', (e) => { if (e.key === 'Enter') sendMsg(); });
+
+$('next').addEventListener('click', () => { closePC(); setSearching(true, "Recherche d'une personne…"); socket.emit('next'); });
+
+$('report').addEventListener('click', () => {
+  if (!confirm('Signaler cette personne ? Elle ne te sera plus proposée.')) return;
+  closePC();
+  setSearching(true, "Recherche d'une personne…");
+  socket.emit('report');
+});
+
+$('stop').addEventListener('click', () => {
+  socket.emit('stop');
+  closePC();
+  localStream.getTracks().forEach((t) => t.stop());
+  $('room').style.display = 'none';
+  $('home').style.display = 'grid';
+});
+</script>
+</body>
+</html>
